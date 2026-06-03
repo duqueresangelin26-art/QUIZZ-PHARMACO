@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PHARMACO · DCEM II · Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070b14;
+    --surface: #0d1526;
+    --border: #1a2a45;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --accent3: #f59e0b;
+    --correct: #10b981;
+    --wrong: #ef4444;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --glow: 0 0 40px rgba(0,212,255,0.15);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* BACKGROUND PARTICLES */
+  #canvas-bg {
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    pointer-events:none;
+    z-index:0;
+    opacity:0.4;
+  }
+
+  /* HEADER */
+  .header {
+    position: relative;
+    z-index: 10;
+    padding: 40px 24px 20px;
+    text-align: center;
+  }
+
+  .header-tag {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 4px 14px;
+    border-radius: 2px;
+    margin-bottom: 16px;
+    animation: fadeIn 0.6s ease;
+  }
+
+  .header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 6vw, 4.5rem);
+    font-weight: 800;
+    letter-spacing: -2px;
+    line-height: 1;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: fadeIn 0.8s ease 0.1s both;
+  }
+
+  .header p {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    color: var(--muted);
+    font-size: 1rem;
+    margin-top: 8px;
+    animation: fadeIn 0.8s ease 0.2s both;
+  }
+
+  /* PROGRESS BAR */
+  .progress-wrap {
+    position: relative;
+    z-index: 10;
+    max-width: 700px;
+    margin: 0 auto 24px;
+    padding: 0 24px;
+  }
+
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 0 0 10px var(--accent);
+  }
+
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  /* SCORE DISPLAY */
+  .score-pills {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 10;
+    flex-wrap: wrap;
+    padding: 0 24px;
+  }
+
+  .pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    font-weight: 500;
+  }
+
+  .pill-correct { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: var(--correct); }
+  .pill-wrong { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: var(--wrong); }
+  .pill-category { background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.2); color: var(--accent); }
+
+  /* QUESTION CARD */
+  .card-container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 24px 40px;
+    position: relative;
+    z-index: 10;
+  }
+
+  .question-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+    animation: slideUp 0.4s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: var(--glow), 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  .question-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+
+  .question-number {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .category-badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    background: rgba(124,58,237,0.15);
+    border: 1px solid rgba(124,58,237,0.3);
+    color: #a78bfa;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .question-text {
+    font-family: 'Instrument Serif', serif;
+    font-size: 1.25rem;
+    line-height: 1.6;
+    color: #f1f5f9;
+    margin-bottom: 28px;
+  }
+
+  /* OPTIONS */
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .option-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .option-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0,212,255,0.05), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .option-btn:not(.disabled):hover {
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.06);
+    transform: translateX(4px);
+    box-shadow: -3px 0 0 var(--accent);
+  }
+
+  .option-btn:not(.disabled):hover::before { opacity: 1; }
+
+  .option-letter {
+    min-width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .option-btn.correct {
+    border-color: var(--correct);
+    background: rgba(16,185,129,0.1);
+    animation: correctPulse 0.6s ease;
+  }
+
+  .option-btn.correct .option-letter {
+    background: var(--correct);
+    border-color: var(--correct);
+    color: #000;
+  }
+
+  .option-btn.wrong {
+    border-color: var(--wrong);
+    background: rgba(239,68,68,0.08);
+    animation: wrongShake 0.4s ease;
+  }
+
+  .option-btn.wrong .option-letter {
+    background: var(--wrong);
+    border-color: var(--wrong);
+    color: #fff;
+  }
+
+  .option-btn.disabled { cursor: default; pointer-events: none; }
+
+  /* EXPLANATION */
+  .explanation {
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: rgba(0,212,255,0.05);
+    border: 1px solid rgba(0,212,255,0.15);
+    border-radius: 10px;
+    border-left: 3px solid var(--accent);
+    animation: fadeIn 0.5s ease;
+    display: none;
+  }
+
+  .explanation.visible { display: block; }
+
+  .explanation-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .explanation p {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    color: #94a3b8;
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+
+  /* NEXT BUTTON */
+  .btn-next {
+    margin-top: 20px;
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: none;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-next::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.1);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .btn-next:hover::before { transform: translateX(100%); }
+  .btn-next:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,212,255,0.3); }
+  .btn-next.visible { display: block; animation: fadeIn 0.4s ease; }
+
+  /* CATEGORY SELECTOR */
+  .category-selector {
+    max-width: 700px;
+    margin: 0 auto 28px;
+    padding: 0 24px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    position: relative;
+    z-index: 10;
+  }
+
+  .cat-btn {
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .cat-btn:hover, .cat-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,212,255,0.08);
+  }
+
+  /* RESULTS SCREEN */
+  #results {
+    display: none;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 24px 60px;
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    animation: slideUp 0.5s ease;
+  }
+
+  .result-ring {
+    width: 160px;
+    height: 160px;
+    margin: 0 auto 32px;
+    position: relative;
+  }
+
+  .result-ring svg { transform: rotate(-90deg); }
+
+  .result-ring .ring-bg {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 8;
+  }
+
+  .result-ring .ring-fill {
+    fill: none;
+    stroke: url(#ringGrad);
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .result-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .result-pct {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .result-label { font-size: 10px; color: var(--muted); letter-spacing: 2px; }
+
+  .result-message {
+    font-family: 'Instrument Serif', serif;
+    font-size: 1.8rem;
+    font-style: italic;
+    color: #f1f5f9;
+    margin-bottom: 12px;
+  }
+
+  .result-sub { color: var(--muted); font-size: 13px; margin-bottom: 32px; }
+
+  .result-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .stat-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 12px;
+  }
+
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+  }
+
+  .stat-value.correct { color: var(--correct); }
+  .stat-value.wrong { color: var(--wrong); }
+  .stat-value.total { color: var(--accent); }
+
+  .stat-label { font-size: 10px; color: var(--muted); letter-spacing: 2px; margin-top: 4px; text-transform: uppercase; }
+
+  .btn-restart {
+    padding: 16px 48px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .btn-restart:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(0,212,255,0.3); }
+
+  /* SPLASH SCREEN */
+  #splash {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  #splash.hidden { opacity: 0; transform: scale(1.02); pointer-events: none; }
+
+  .splash-logo {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(3rem, 10vw, 7rem);
+    font-weight: 800;
+    letter-spacing: -4px;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: 8px;
+    animation: pulse 3s ease infinite;
+  }
+
+  .splash-sub {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--muted);
+    margin-bottom: 48px;
+  }
+
+  .splash-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    max-width: 400px;
+    width: 100%;
+    margin-bottom: 40px;
+  }
+
+  .splash-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .splash-stat .n {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--accent);
+  }
+
+  .splash-stat .l {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .btn-start {
+    padding: 18px 60px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 10px 40px rgba(0,212,255,0.2);
+  }
+
+  .btn-start:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,212,255,0.4); }
+
+  /* ANIMATIONS */
+  @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+  @keyframes slideUp { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) } }
+  @keyframes correctPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.01)} }
+  @keyframes wrongShake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.8} }
+
+  /* FEEDBACK TOAST */
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    padding: 12px 28px;
+    border-radius: 100px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    z-index: 200;
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.correct-toast { background: rgba(16,185,129,0.9); color: #fff; }
+  .toast.wrong-toast { background: rgba(239,68,68,0.85); color: #fff; }
+
+  /* TIMER */
+  .timer-bar {
+    height: 2px;
+    background: var(--accent3);
+    border-radius: 1px;
+    transform-origin: left;
+    transition: transform 30s linear;
+    margin-bottom: 20px;
+  }
+
+  .timer-bar.running { transform: scaleX(0); }
+
+  /* MOBILE */
+  @media(max-width:480px) {
+    .question-card { padding: 20px; }
+    .question-text { font-size: 1.05rem; }
+    .result-stats { grid-template-columns: repeat(3,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="canvas-bg"></canvas>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-logo">PHARMACO</div>
+  <div class="splash-sub">DCEM II · Évaluation Globale · Anti-infectieux</div>
+  <div class="splash-grid">
+    <div class="splash-stat"><div class="n">70+</div><div class="l">Questions</div></div>
+    <div class="splash-stat"><div class="n">6</div><div class="l">Chapitres</div></div>
+    <div class="splash-stat"><div class="n">UNIFA</div><div class="l">Source</div></div>
+    <div class="splash-stat"><div class="n">QCM</div><div class="l">Format</div></div>
+  </div>
+  <button class="btn-start" onclick="startQuiz()">COMMENCER →</button>
+</div>
+
+<!-- QUIZ -->
+<div id="quiz-container" style="display:none">
+  <div class="header">
+    <div class="header-tag">PHARMACO · DCEM II</div>
+    <h1>QUIZ GLOBAL</h1>
+    <p>Anti-infectieux · Antifongiques · Antiviraux · Antiparasitaires</p>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="progress-info">
+      <span id="prog-text">Q 1/70</span>
+      <span id="prog-pct">0%</span>
+    </div>
+  </div>
+
+  <div class="score-pills">
+    <div class="pill pill-correct">✓ <span id="score-correct">0</span> CORRECT</div>
+    <div class="pill pill-wrong">✗ <span id="score-wrong">0</span> FAUX</div>
+    <div class="pill pill-category" id="current-cat">—</div>
+  </div>
+
+  <div class="card-container">
+    <div class="question-card" id="question-card">
+      <div class="question-number" id="q-number">QUESTION 1</div>
+      <div class="timer-bar" id="timer-bar"></div>
+      <div class="category-badge" id="q-category"></div>
+      <div class="question-text" id="q-text"></div>
+      <div class="options" id="q-options"></div>
+      <div class="explanation" id="q-explanation">
+        <div class="explanation-label">💡 Explication</div>
+        <p id="q-explanation-text"></p>
+      </div>
+      <button class="btn-next" id="btn-next" onclick="nextQuestion()">SUIVANT →</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="results">
+  <div class="header">
+    <div class="header-tag">RÉSULTATS FINAUX</div>
+    <h1>BILAN</h1>
+  </div>
+  <div class="card-container" style="text-align:center">
+    <div class="result-ring">
+      <svg width="160" height="160" viewBox="0 0 160 160">
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#00d4ff"/>
+            <stop offset="100%" style="stop-color:#7c3aed"/>
+          </linearGradient>
+        </defs>
+        <circle class="ring-bg" cx="80" cy="80" r="66"/>
+        <circle class="ring-fill" id="ring-fill" cx="80" cy="80" r="66" stroke-dasharray="414.69" stroke-dashoffset="414.69"/>
+      </svg>
+      <div class="result-center">
+        <div class="result-pct" id="result-pct">0%</div>
+        <div class="result-label">SCORE</div>
+      </div>
+    </div>
+    <div class="result-message" id="result-message"></div>
+    <div class="result-sub" id="result-sub"></div>
+    <div class="result-stats">
+      <div class="stat-box"><div class="stat-value total" id="res-total">0</div><div class="stat-label">Total</div></div>
+      <div class="stat-box"><div class="stat-value correct" id="res-correct">0</div><div class="stat-label">Correct</div></div>
+      <div class="stat-box"><div class="stat-value wrong" id="res-wrong">0</div><div class="stat-label">Faux</div></div>
+    </div>
+    <button class="btn-restart" onclick="restartQuiz()">↻ RECOMMENCER</button>
+  </div>
+</div>
+
+<script>
+// ===== CANVAS BACKGROUND =====
+const canvas = document.getElementById('canvas-bg');
+const ctx = canvas.getContext('2d');
+let particles = [];
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+function createParticles() {
+  particles = [];
+  for (let i = 0; i < 60; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 1.5 + 0.3,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      alpha: Math.random() * 0.5 + 0.1
+    });
+  }
+}
+
+function animateCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0) p.x = canvas.width;
+    if (p.x > canvas.width) p.x = 0;
+    if (p.y < 0) p.y = canvas.height;
+    if (p.y > canvas.height) p.y = 0;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(0,212,255,${p.alpha})`;
+    ctx.fill();
+  });
+  requestAnimationFrame(animateCanvas);
+}
+
+resizeCanvas(); createParticles(); animateCanvas();
+window.addEventListener('resize', () => { resizeCanvas(); createParticles(); });
+
+// ===== QUESTIONS DATABASE =====
+const questions = [
+  // ===== ANTIBIOTIQUES - CLASSES & MÉCANISMES =====
+  {cat:"Antibiotiques", q:"La paroi des bactéries Gram positif est caractérisée par la présence :", opts:["De D-Ala-D-Ala","D'acides mycoliques (pour Mycobactéries)","Des lipopolysaccharides","De β-1,3 glucane","De peptidoglycane"], ans:4, exp:"La paroi Gram+ est riche en peptidoglycane (épais). Les LPS sont caractéristiques des Gram-. Les acides mycoliques sont spécifiques des mycobactéries."},
+  {cat:"Antibiotiques", q:"La vancomycine fait partie de la classe chimique des :", opts:["Lipopeptides","Glycopeptides","Macrolides","Aminoglycosides","Lipoglycopeptides"], ans:1, exp:"La vancomycine est un glycopeptide. Elle inhibe la synthèse de la paroi en se liant aux précurseurs D-Ala-D-Ala. La daptomycine est le lipopeptide."},
+  {cat:"Antibiotiques", q:"L'antibactérien inhibant la biosynthèse de l'ARN polymérase ADN-dépendante est :", opts:["La nitrofurantoïne","La rifampicine","La lévofloxacine","Le tinidazole","La dapsone"], ans:1, exp:"La rifampicine (rifamycine) inhibe spécifiquement l'ARN polymérase ADN-dépendante bactérienne. C'est son mécanisme d'action antituberculeux principal."},
+  {cat:"Antibiotiques", q:"Tous les antibiotiques suivants sont à large spectre, SAUF :", opts:["L'érythromycine","La kanamycine","La doxycycline","L'ampicilline","La triméthoprime"], ans:0, exp:"L'érythromycine (macrolide) a un spectre essentiellement sur les Gram+. Les autres ont un spectre plus large couvrant Gram+ et Gram-."},
+  {cat:"Antibiotiques", q:"Tous les antibiotiques suivants sont à large spectre, SAUF :", opts:["L'ampicilline","L'érythromycine","La mupirocine","La doxycycline","La ciprofloxacine"], ans:2, exp:"La mupirocine (pseudomonique) est à spectre étroit, utilisée en usage topique surtout contre Staph. aureus. Elle n'est pas un antibiotique à large spectre."},
+  {cat:"Antibiotiques", q:"La clindamycine est un antibiotique antibactérien faisant partie de la classe chimique des :", opts:["Lipopeptides","Glycopeptides","Macrolides","Aminoglycosides","Lincosamides"], ans:4, exp:"La clindamycine est un lincosamide. Elle inhibe la synthèse protéique en se fixant sur la sous-unité 50S. Elle est active sur les anaérobies et les cocci Gram+."},
+  {cat:"Antibiotiques", q:"Tous les antibactériens suivants inhibent la synthèse des protéines, SAUF :", opts:["L'acide fusidique","La minocycline","L'azithromycine","La clofazimine","La streptomycine"], ans:3, exp:"La clofazimine est un antibactérien actif sur les mycobactéries. Elle n'inhibe pas la synthèse des protéines mais agit sur la membrane et génère des espèces réactives de l'oxygène."},
+  {cat:"Antibiotiques", q:"Les antibactériens inhibant la sous-unité ribosomale 30S sont :", opts:["L'isoniazide et la térizidone","L'érythromycine et le métronidazole","La gentamycine et l'acide fusidique","La tigécycline et la paromomycine","La clarithromycine et la ciprofloxacine"], ans:3, exp:"La tigécycline (glycylcycline) et la paromomycine (aminoglycoside) inhibent toutes deux la sous-unité 30S. Les aminoglycosides et les tétracyclines agissent sur le 30S."},
+  {cat:"Antibiotiques", q:"La ciprofloxacine est un antibiotique antibactérien faisant partie de la classe chimique des :", opts:["Macrolides","Kétolides","Fluoroquinolones","Oxazolidinones","Lincosamides"], ans:2, exp:"La ciprofloxacine est une fluoroquinolone de 2ème génération. Elle inhibe la gyrase (topoisomérase II) et la topoisomérase IV bactériennes."},
+  {cat:"Antibiotiques", q:"L'antibactérien inhibant l'ARN polymérase et l'ADN dépendante est :", opts:["La nitrofurantoïne","Le métronidazole","La rifabutine","La lévofloxacine","La dapsone"], ans:2, exp:"La rifabutine, comme la rifampicine, appartient aux rifamycines et inhibe l'ARN polymérase ADN-dépendante. Elle est utilisée dans la tuberculose et les infections à MAC."},
+  {cat:"Antibiotiques", q:"La pyriméthamine est un antifolate qui agit en inhibant :", opts:["La folate synthétase","La dihydrofolate réductase","La dihydroptéroate synthétase","La ribonucléotide réductase","La thymidylate synthase"], ans:1, exp:"La pyriméthamine inhibe la dihydrofolate réductase (DHFR), enzyme qui réduit le dihydrofolate en tétrahydrofolate, nécessaire à la synthèse des acides nucléiques."},
+  {cat:"Antibiotiques", q:"Tous les antibactériens suivants sont néphrotoxiques, SAUF :", opts:["La néomycine","Le sulfaméthoxazole","La gentamycine","La vancomycine","La streptomycine"], ans:1, exp:"Le sulfaméthoxazole n'est pas néphrotoxique au sens habituel. Les aminoglycosides (néomycine, gentamycine, streptomycine) et la vancomycine sont néphrotoxiques."},
+  {cat:"Antibiotiques", q:"Tous les antibactériens suivants sont néphrotoxiques, SAUF :", opts:["La vancomycine","L'amoxicilline","Le sulfaméthoxazole","La gentamycine","La streptomycine"], ans:1, exp:"L'amoxicilline (pénicilline) n'est pas néphrotoxique. Les aminoglycosides, la vancomycine sont les principaux antibiotiques néphrotoxiques."},
+  {cat:"Antibiotiques", q:"L'antibiotique qui agit en inhibant l'activation de l'acide folique est :", opts:["La sulfadoxine","La dapsone","La sulfadiazine","La pyriméthamine","Le sulfaméthoxazole"], ans:3, exp:"La pyriméthamine inhibe l'activation (réduction) de l'acide folique en inhibant la DHFR. Les sulfonamides inhibent la synthèse du dihydrofolate (DHPS), pas son activation."},
+  {cat:"Antibiotiques", q:"L'antibiotique qui n'est pas un inhibiteur de la synthèse de l'acide folique est :", opts:["L'acide para-aminosalicylique","Le triméthoprime","La sulfadiazine","La dapsone","Le sulfaméthoxazole"], ans:1, exp:"Le triméthoprime inhibe la DHFR, donc il interfère avec le métabolisme du folate, mais il n'inhibe pas la synthèse du folate comme le font les sulfonamides (DHPS). Réponse selon le cours: le triméthoprime est l'exception."},
+  {cat:"Antibiotiques", q:"Parmi les antibiotiques suivants, celui qui n'agit pas sur l'ADN bactérien est :", opts:["La clofazimine","La ciprofloxacine","La lévofloxacine","La ceftriaxone","Le métronidazole"], ans:3, exp:"La ceftriaxone est une céphalosporine de 3ème génération qui inhibe la synthèse de la paroi bactérienne (β-lactamine), et non l'ADN. Les fluoroquinolones et le métronidazole agissent sur l'ADN."},
+
+  // ===== ANTITUBERCULEUX =====
+  {cat:"Antituberculeux", q:"La paroi des mycobactéries comme M. tuberculosis est caractérisée par la présence :", opts:["De D-Ala-D-Ala","De D-Ala-D-Ala (comme Gram+)","Des lipopolysaccharides","De β-1,3 glucane","D'acides mycoliques"], ans:4, exp:"La paroi des mycobactéries est caractérisée par la présence d'acides mycoliques (acides gras à longue chaîne), lui conférant son caractère acido-alcoolo-résistant (Ziehl-Neelsen)."},
+  {cat:"Antituberculeux", q:"Tous ces antituberculeux inhibent la synthèse de la paroi des mycobactéries, SAUF :", opts:["La bédaquiline","L'isoniazide","La pyrazinamide","Le prothionamide","L'éthionamide"], ans:0, exp:"La bédaquiline inhibe l'ATP synthase des mycobactéries (pas la paroi). L'isoniazide, l'éthionamide et le prothionamide inhibent la synthèse des acides mycoliques (FAS-II)."},
+  {cat:"Antituberculeux", q:"Tous ces antituberculeux inhibent le complexe FAS-II, SAUF :", opts:["L'isoniazide","La pyrazinamide","La thioacétazone","L'éthionamide","Le prothionamide"], ans:1, exp:"La pyrazinamide n'inhibe pas le complexe FAS-II. Son mécanisme exact est partiellement élucidé (acidification intracellulaire, inhibition de la synthase des acides gras). Les autres inhibent bien FAS-II."},
+  {cat:"Antituberculeux", q:"L'isoniazide est activé par l'enzyme :", opts:["L'énoyl-ACP réductase","La catalase-peroxydase","Pyruvate-ferrédoxine oxydoréductase","La pyrazinamidase","La dihydroptéroate synthétase"], ans:1, exp:"L'isoniazide est une prodrogue activée par la catalase-peroxydase (KatG) de M. tuberculosis. Les mutants résistants présentent souvent une mutation de katG."},
+  {cat:"Antituberculeux", q:"Le seul antituberculeux à ne pas être hépatotoxique est :", opts:["L'isoniazide","La rifampicine","L'éthambutol","L'éthionamide","La pyrazinamide"], ans:2, exp:"L'éthambutol est le seul antituberculeux de 1ère ligne qui n'est pas hépatotoxique. Sa toxicité principale est oculaire (névrite optique rétrobulbaire avec scotome central)."},
+  {cat:"Antituberculeux", q:"L'antituberculeux de première ligne le moins hépatotoxique est :", opts:["L'isoniazide","La rifampicine","L'éthambutol","L'éthionamide","La pyrazinamide"], ans:2, exp:"L'éthambutol est reconnu comme le moins hépatotoxique parmi les antituberculeux de 1ère ligne. La pyrazinamide est la plus hépatotoxique."},
+  {cat:"Antituberculeux", q:"L'antituberculeux de première ligne le plus hépatotoxique est :", opts:["L'éthambutol","L'éthionamide","La pyrazinamide","L'isoniazide","La rifampicine"], ans:2, exp:"La pyrazinamide est l'antituberculeux de 1ère ligne le plus hépatotoxique. Elle peut provoquer des hépatites sévères. L'isoniazide et la rifampicine sont aussi hépatotoxiques."},
+  {cat:"Antituberculeux", q:"L'antituberculeux de première ligne non hépatotoxique est :", opts:["L'éthionamide","La pyrazinamide","L'isoniazide","La rifampicine","L'éthambutol"], ans:4, exp:"L'éthambutol est le seul antituberculeux de 1ère ligne non hépatotoxique. Sa principale toxicité est oculaire (surveillance obligatoire de l'acuité visuelle)."},
+  {cat:"Antituberculeux", q:"Tous ces antibiotiques sont des prodrogues, SAUF :", opts:["La cyclosérine","Le métronidazole","L'abacavir","L'isoniazide","La pyrazinamide"], ans:0, exp:"La cyclosérine est un antibiotique actif directement (pas une prodrogue). L'isoniazide, la pyrazinamide, le métronidazole et l'abacavir sont des prodrogues nécessitant une activation."},
+
+  // ===== ANTIFONGIQUES =====
+  {cat:"Antifongiques", q:"La classe des antifongiques inhibiteurs enzymatiques est celle :", opts:["Des polyènes","Des triazoles","Des échinocandines","Des allylamines","Des morpholines"], ans:1, exp:"Les triazoles (fluconazole, itraconazole, voriconazole) inhibent l'enzyme 14α-déméthylase (CYP51), bloquant la synthèse de l'ergostérol. Ce sont des inhibiteurs enzymatiques."},
+  {cat:"Antifongiques", q:"Les triazoles sont des antifongiques agissant en inhibant l'enzyme :", opts:["Glucose-6-phosphate déshydrogénase","Dihydrofolate réductase","Dihydroptéroate synthétase","Squalène oxydase","14-déméthylase"], ans:4, exp:"Les triazoles inhibent le CYP450 fongique (14α-déméthylase/CYP51), empêchant la conversion du lanostérol en ergostérol, l'équivalent fongique du cholestérol."},
+  {cat:"Antifongiques", q:"La classe des antifongiques les plus toxiques est celle :", opts:["Des triazoles","Des échinocandines","Des polyènes","Des allylamines","Des morpholines"], ans:2, exp:"Les polyènes (amphotéricine B, nystatine) sont les antifongiques les plus toxiques, notamment l'amphotéricine B qui peut causer néphrotoxicité, fièvre, frissons, anémie."},
+  {cat:"Antifongiques", q:"L'amphotéricine B agit :", opts:["En ayant un effet anti-mitotique","En inhibant la biosynthèse de l'ergostérol","En inhibant la biosynthèse du β-1,3 glucane","En formant un complexe avec l'ergostérol","En inhibant la biosynthèse des acides nucléiques"], ans:3, exp:"L'amphotéricine B (polyène) se lie à l'ergostérol de la membrane fongique, créant des pores qui altèrent la perméabilité membranaire et entraînent la lyse cellulaire."},
+  {cat:"Antifongiques", q:"La micafungine agit en :", opts:["Modifiant la composition de la membrane fongique","Inhibant la biosynthèse de l'ergostérol","Inhibant la biosynthèse des acides nucléiques","Inhibant la biosynthèse de la paroi fongique","En formant un complexe avec l'ergostérol"], ans:3, exp:"La micafungine est une échinocandine. Elle inhibe la synthèse du β-1,3-glucane, composant majeur de la paroi fongique, entraînant la lyse osmotique du champignon."},
+  {cat:"Antifongiques", q:"Le clotrimazole est un antifongique qui agit :", opts:["En inhibant la biosynthèse des acides nucléiques","En inhibant la biosynthèse de la paroi fongique","En formant un complexe avec l'ergostérol","En modifiant la composition de la membrane fongique","En inhibant la biosynthèse de l'ergostérol"], ans:3, exp:"Le clotrimazole (imidazole) agit en modifiant la composition de la membrane fongique via l'inhibition de la 14α-déméthylase, réduisant la synthèse d'ergostérol."},
+
+  // ===== ANTIVIRAUX =====
+  {cat:"Antiviraux", q:"Les deux antiviraux à large spectre sont :", opts:["Le foscarnet et la ribavirine","Le peginterféron et le bocéprévir","L'acyclovir et le foscarnet","La ribavirine et l'adéfovir","L'idoxyuridine et la trifluridine"], ans:0, exp:"Le foscarnet et la ribavirine sont les deux antiviraux à large spectre. La ribavirine est active sur virus ARN et ADN. Le foscarnet inhibe les ADN polymérases virales."},
+  {cat:"Antiviraux", q:"Le principal effet secondaire de la zidovudine (AZT) est :", opts:["L'agranulocytose","La neutropénie fébrile","La thrombopénie","L'éosinophilie","L'anémie macrocytaire"], ans:4, exp:"L'effet secondaire principal de la zidovudine (AZT) est l'anémie macrocytaire (myélotoxicité). Elle peut aussi causer une myopathie mitochondriale avec utilisation prolongée."},
+  {cat:"Antiviraux", q:"Le seul antirétroviral inhibiteur nucléotidique de la rétrotranscriptase est :", opts:["L'emtricitabine","La didanosine","Le ténofovir","La stavudine","L'abacavir"], ans:2, exp:"Le ténofovir (TDF) est le seul INRT (inhibiteur nucléotidique = analogue nucléotidique). Les autres sont des analogues nucléosidiques (INRS). Différence: le ténofovir n'a besoin que de 2 phosphorylations (contre 3)."},
+  {cat:"Antiviraux", q:"Tous ces antiviraux sont des inhibiteurs nucléosidiques de la transcriptase inverse, SAUF :", opts:["L'abacavir","L'emtricitabine","La didanosine","La lamivudine","La délaviridine"], ans:4, exp:"La délaviridine est un INNTI (inhibiteur non nucléosidique de la transcriptase inverse). Les autres (abacavir, emtricitabine, didanosine, lamivudine) sont des INTI (analogues nucléosidiques)."},
+  {cat:"Antiviraux", q:"L'inhibiteur de protéase ayant l'ictère conjonctival comme effet indésirable est :", opts:["Le ritonavir","Le lopinavir","L'atazanavir","Le nelfinavir","Le darunavir"], ans:2, exp:"L'atazanavir inhibe l'UGT1A1 (glucuronosyltransférase), causant une hyperbilirubinémie indirecte et ictère conjonctival. Cet effet est bénin et ne nécessite pas l'arrêt du traitement."},
+  {cat:"Antiviraux", q:"L'antirétroviral inactif sur le VIH-2 est :", opts:["Le lopinavir","L'éfavirenz","Le ténofovir","L'azidothymidine","Le raltégravir"], ans:1, exp:"L'éfavirenz (INNTI) est inactif sur le VIH-2 car le VIH-2 possède une transcriptase inverse naturellement résistante aux INNTI. Les INTI et les IP sont actifs sur les deux types."},
+  {cat:"Antiviraux", q:"L'inhibiteur de protéase utilisé comme booster est :", opts:["Le ritonavir","L'atazanavir","L'amprénavir","L'indinavir","Le nelfinavir"], ans:0, exp:"Le ritonavir à faibles doses est utilisé comme boosteur pharmacocinétique. Il inhibe le CYP3A4, augmentant ainsi les concentrations des autres inhibiteurs de protéase co-administrés."},
+  {cat:"Antiviraux", q:"L'inhibiteur de protéase ayant la lithiase rénale comme effet indésirable est :", opts:["Le ritonavir","L'amprénavir","L'atazanavir","L'indinavir","Le nelfinavir"], ans:3, exp:"L'indinavir cristallise dans les voies urinaires, causant lithiase rénale et colique néphritique. Il faut boire abondamment (1,5L/j minimum) pour prévenir cet effet."},
+  {cat:"Antiviraux", q:"Les deux antiviraux utilisés dans le traitement de l'hépatite B chronique sont :", opts:["Le ténofovir et la ribavirine","Le peginterféron et le bocéprévir","La lamivudine et le foscarnet","La ribavirine et l'adéfovir","L'emtricitabine et le ténofovir"], ans:4, exp:"L'emtricitabine (FTC) et le ténofovir (TDF) sont les deux antiviraux combinés (dans Truvada) utilisés pour l'hépatite B chronique et le VIH. Ils inhibent la transcriptase inverse du VHB."},
+  {cat:"Antiviraux", q:"Le principal effet secondaire du ténofovir est :", opts:["La macrocytose","L'insuffisance rénale","Le subictère","L'hypersensibilité","La lithiase rénale"], ans:1, exp:"Le ténofovir (TDF) est néphrotoxique: il peut causer une tubulopathie proximale (syndrome de Fanconi) et une insuffisance rénale chronique par accumulation dans les tubules."},
+  {cat:"Antiviraux", q:"Tous ces antiviraux sont antiherpétiques, SAUF :", opts:["L'aciclovir","Le valaciclovir","Le ganciclovir","Le foscarnet","Le darunavir"], ans:4, exp:"Le darunavir est un inhibiteur de protéase anti-VIH, pas un antiherpétique. L'aciclovir, valaciclovir, ganciclovir (CMV) et foscarnet (herpès résistants) sont antiherpétiques."},
+  {cat:"Antiviraux", q:"Avant d'administrer la quinine, il est recommandé de procéder au dosage de l'enzyme :", opts:["Dihydrofolate réductase","Glucose-6-phosphate déshydrogénase","Glucose-6-phosphate réductase","Méthémoglobine réductase","Glutathion peroxydase"], ans:1, exp:"La quinine (comme la primaquine) peut déclencher une anémie hémolytique chez les patients déficients en G6PD. Le dosage G6PD est obligatoire avant l'initiation du traitement."},
+  {cat:"Antiviraux", q:"L'enzyme virale activant les antiviraux antimétabolites est :", opts:["La thymidine kinase","L'adénosine kinase","La guanosine kinase","La thymidine kinase","La cytosine kinase"], ans:0, exp:"La thymidine kinase virale (TK) phosphoryle les analogues nucléosidiques antiviraux (comme l'acyclovir) en leur forme monophosphate active. Les enzymes cellulaires complètent ensuite la phosphorylation."},
+
+  // ===== ANTIPARASITAIRES =====
+  {cat:"Antiparasitaires", q:"L'albendazole provoque une paralysie des helminthes en agissant sur :", opts:["La polymérisation des microtubules","Les récepteurs nicotiniques de l'acétylcholine","La polymérisation de l'hématine en hémozoïne","Les récepteurs de l'acide gamma-aminobutyrique","Les récepteurs métabotropes du glutamate"], ans:0, exp:"L'albendazole (benzimidazole) se lie à la β-tubuline vermiculaire, inhibant la polymérisation des microtubules. Cela perturbe le transport intracellulaire et cause la mort du parasite."},
+  {cat:"Antiparasitaires", q:"La diéthylcarbamazine (DEC) est un anthelminthique antifilarien qui agit :", opts:["En inhibant l'activation de l'acide folique","En inhibant la voie des phosphoinositides","En perturbant le système cholinergique","En inhibant la biosynthèse des éicosanoïdes","Par une hyperstimulation du système GABAergique"], ans:3, exp:"La DEC inhibe la biosynthèse des éicosanoïdes (prostaglandines, leucotriènes) dans les microfilaires, altérant leur mobilité et les rendant plus sensibles à l'élimination immunitaire."},
+  {cat:"Antiparasitaires", q:"L'antibactérien indiqué dans la prise en charge de la filariose lymphatique en raison de son effet macrofilaricide est :", opts:["La doxycycline","Le tinidazole","La clindamycine","L'ivermectine","Le nitazoxanide"], ans:0, exp:"La doxycycline élimine Wolbachia, bactérie endosymbiote essentielle à la survie des filaires adultes. Elle a un effet macrofilaricide indirect, contrairement à l'ivermectine (microfilaricide)."},
+  {cat:"Antiparasitaires", q:"L'aminoside utilisé dans le traitement de la cryptosporidiose est :", opts:["L'azithromycine","L'érythromycine","La clarithromycine","L'aminosidine","La spiramycine"], ans:3, exp:"L'aminosidine (paromomycine) est l'aminoside utilisé dans la cryptosporidiose. C'est un antiprotozoaire non absorbé par voie orale, actif sur Cryptosporidium parvum."},
+  {cat:"Antiparasitaires", q:"Tous ces antibactériens peuvent être également utilisés comme antiparasitaires, SAUF :", opts:["La doxycycline","La sulfadiazine","La paromomycine","La clofazimine","Le cotrimoxazole"], ans:3, exp:"La clofazimine est un antiléprosique sans activité antiparasitaire. Les autres: doxycycline (paludisme), sulfadiazine (toxoplasmose), paromomycine (leishmaniose), cotrimoxazole (pneumocystose)."},
+  {cat:"Antiparasitaires", q:"Tous ces anthelminthiques provoquent une paralysie des helminthes, SAUF :", opts:["Le praziquantel","L'éflornithine","L'ivermectine","Le nitazoxanide","La pipérazine"], ans:1, exp:"L'éflornithine (DFMO) est un antiprotozoaire actif sur Trypanosoma brucei gambiense (maladie du sommeil). Elle inhibe l'ornithine décarboxylase, pas la paralysie helminthique."},
+  {cat:"Antiparasitaires", q:"L'anémie hémolytique due à la quinine survient chez un patient ayant une déficience en :", opts:["Méthémoglobine réductase","Dihydroptéroate synthétase","Dihydrofolate réductase","Glucose-6-phosphate déshydrogénase","Glucose-6-phosphate réductase"], ans:3, exp:"La déficience en G6PD (favisme) expose à l'hémolyse lors de l'administration de quinine, primaquine, et autres oxydants. La G6PD protège les GR du stress oxydatif."},
+  {cat:"Antiparasitaires", q:"Le macrolide utilisé dans le traitement de la toxoplasmose est :", opts:["La clarithromycine","L'érythromycine","La spiramycine","L'azithromycine","La télithromycine"], ans:2, exp:"La spiramycine est le macrolide utilisé dans la toxoplasmose (surtout chez la femme enceinte pour prévenir la transmission materno-fœtale). Elle se concentre dans les tissus placentaires."},
+  {cat:"Antiparasitaires", q:"Tous ces antibactériens peuvent être également utilisés comme antiparasitaires, SAUF :", opts:["Le métronidazole","La rifampicine","La doxycycline","La sulfadiazine","Le cotrimoxazole"], ans:1, exp:"La rifampicine est un antituberculeux sans activité antiparasitaire directe notable. Les autres sont utilisés en antiparasitologie: métronidazole (amibiase), doxycycline (paludisme), etc."},
+
+  // ===== QUESTIONS COMPLÉMENTAIRES =====
+  {cat:"Antibiotiques", q:"La céphalosporine ayant une activité sur le Staphylococcus aureus résistant (SARM) est :", opts:["La céfotaxime","La ceftaroline","Le céfuroxime","La céfoxitine","La céfazoline"], ans:1, exp:"La ceftaroline est une céphalosporine de 5ème génération (C5G) active sur le SARM. Elle se lie à la PLP2a, la protéine de liaison aux pénicillines modifiée responsable de la résistance au méthicilline."},
+  {cat:"Antituberculeux", q:"Tous ces antituberculeux inhibent la synthèse de la paroi des mycobactéries, SAUF :", opts:["La bédaquiline","L'isoniazide","La pyrazinamide","Le prothionamide","L'éthionamide"], ans:0, exp:"La bédaquiline inhibe l'ATP synthase mycobactérienne (sous-unité c de l'enzyme F1F0), perturbant la production d'énergie. Elle n'agit pas sur la paroi."},
+  {cat:"Antiviraux", q:"Tous ces antiviraux sont antiherpétiques, SAUF :", opts:["L'aciclovir","Le valaciclovir","Le ganciclovir","Le foscarnet","Le darunavir"], ans:4, exp:"Le darunavir est un inhibiteur de protéase du VIH. Il n'a aucune activité antiherpétique."},
+  {cat:"Antibiotiques", q:"L'antibiotique qui agit sur la membrane bactérienne est :", opts:["La clarithromycine","La daptomycine","La bédaquiline","La vancomycine","Le sulfaméthoxazole"], ans:1, exp:"La daptomycine est un lipopeptide cyclique qui s'insère dans la membrane bactérienne Gram+ en présence de calcium, créant des pores et dépolarisant la membrane."},
+  {cat:"Antiviraux", q:"Tous ces antiviraux sont antiherpétiques, SAUF :", opts:["L'aciclovir","Le valaciclovir","Le ganciclovir","Le foscarnet","Le darunavir"], ans:4, exp:"Le darunavir est un inhibiteur de protéase du VIH sans activité sur les herpèsvirus."},
+  {cat:"Antifongiques", q:"La terbinafine est un antifongique qui agit :", opts:["En modifiant la composition de la membrane fongique","En inhibant la biosynthèse de l'ergostérol","En inhibant la biosynthèse des acides nucléiques","En inhibant la biosynthèse de la paroi fongique","En formant un complexe avec l'ergostérol"], ans:1, exp:"La terbinafine (allylamide) inhibe la squalène époxydase (oxide squalène), entraînant une accumulation toxique de squalène et un déficit en ergostérol."},
+  {cat:"Antifongiques", q:"La nystatine est un antifongique qui agit :", opts:["En inhibant la biosynthèse des acides nucléiques","En ayant un effet antimitotique","En inhibant la biosynthèse de l'ergostérol","En inhibant la biosynthèse de la paroi fongique","En formant un complexe avec l'ergostérol"], ans:4, exp:"La nystatine, comme l'amphotéricine B (polyène), se lie à l'ergostérol de la membrane fongique, formant des pores transmembranaires qui causent la fuite des ions et la lyse cellulaire."},
+  {cat:"Antiviraux", q:"Les deux antiviraux utilisés dans le traitement de l'hépatite B chronique sont :", opts:["Le foscarnet et la ribavirine","Le peginterféron et le bocéprévir","La lamivudine et le foscarnet","La ribavirine et l'adéfovir","Le ténofovir et la lamivudine"], ans:4, exp:"Le ténofovir et la lamivudine sont des INTI actifs sur l'hépatite B chronique. Ils inhibent l'ADN polymérase/transcriptase inverse du VHB."},
+  {cat:"Antiparasitaires", q:"Les benzimidazolés sont des anthelminthiques qui agissent :", opts:["En inhibant l'activation de l'acide folique","En perturbant la neurotransmission par leur effet antimitotique","En perturbant le système cholinergique","En inhibant la biosynthèse des éicosanoïdes","Par une hyperstimulation du système GABAergique"], ans:1, exp:"Les benzimidazolés (albendazole, mébendazole) agissent par leur effet antimitotique: ils se lient à la β-tubuline et inhibent la polymérisation des microtubules, perturbant la division cellulaire et le transport intracellulaire."},
+  {cat:"Antibiotiques", q:"Tous les antibiotiques suivants sont à large spectre, SAUF :", opts:["L'ampicilline","L'acide fusidique","L'érythromycine","La doxycycline","La ciprofloxacine"], ans:1, exp:"L'acide fusidique a un spectre étroit, principalement actif contre Staphylococcus aureus (dont les SARM). Il n'est pas considéré comme un antibiotique à large spectre."},
+  {cat:"Antibiotiques", q:"Parmi les antibiotiques suivants, celui qui n'agit pas sur l'ADN bactérien est :", opts:["La clofazimine","Le méropénème","La ciprofloxacine","La lévofloxacine","Le tinidazole"], ans:1, exp:"Le méropénème est un carbapénème (β-lactamine) qui inhibe la synthèse de la paroi bactérienne (pas l'ADN). Les fluoroquinolones, le tinidazole et la clofazimine agissent sur l'ADN."},
+];
+
+// ===== QUIZ LOGIC =====
+let currentQ = 0;
+let scoreCorrect = 0;
+let scoreWrong = 0;
+let answered = false;
+let shuffled = [];
+
+function shuffle(arr) {
+  let a = [...arr];
+  for (let i = a.length-1; i>0; i--) {
+    let j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function startQuiz() {
+  shuffled = shuffle(questions);
+  currentQ = 0; scoreCorrect = 0; scoreWrong = 0;
+  document.getElementById('splash').classList.add('hidden');
+  setTimeout(() => {
+    document.getElementById('splash').style.display = 'none';
+    document.getElementById('quiz-container').style.display = 'block';
+    renderQuestion();
+  }, 600);
+}
+
+function renderQuestion() {
+  if (currentQ >= shuffled.length) { showResults(); return; }
+  answered = false;
+  const q = shuffled[currentQ];
+  const total = shuffled.length;
+
+  // Progress
+  const pct = Math.round((currentQ/total)*100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('prog-text').textContent = `Q ${currentQ+1}/${total}`;
+  document.getElementById('prog-pct').textContent = pct + '%';
+
+  // Card
+  document.getElementById('q-number').textContent = `QUESTION ${currentQ+1}`;
+  document.getElementById('q-category').textContent = q.cat;
+  document.getElementById('current-cat').textContent = q.cat;
+  document.getElementById('q-text').textContent = q.q;
+
+  // Options
+  const optDiv = document.getElementById('q-options');
+  optDiv.innerHTML = '';
+  const letters = ['A','B','C','D','E','F'];
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = `<span class="option-letter">${letters[i]}</span><span>${opt}</span>`;
+    btn.onclick = () => selectAnswer(i, btn);
+    optDiv.appendChild(btn);
+  });
+
+  // Reset
+  document.getElementById('q-explanation').classList.remove('visible');
+  document.getElementById('btn-next').classList.remove('visible');
+  document.getElementById('score-correct').textContent = scoreCorrect;
+  document.getElementById('score-wrong').textContent = scoreWrong;
+
+  // Timer bar animation
+  const tb = document.getElementById('timer-bar');
+  tb.style.transition = 'none';
+  tb.style.transform = 'scaleX(1)';
+  setTimeout(() => {
+    tb.style.transition = 'transform 30s linear';
+    tb.style.transform = 'scaleX(0)';
+  }, 50);
+
+  // Animate card
+  const card = document.getElementById('question-card');
+  card.style.animation = 'none';
+  void card.offsetWidth;
+  card.style.animation = 'slideUp 0.4s cubic-bezier(0.4,0,0.2,1)';
+}
+
+function selectAnswer(i, btn) {
+  if (answered) return;
+  answered = true;
+
+  const q = shuffled[currentQ];
+  const correct = q.ans;
+  const allBtns = document.querySelectorAll('.option-btn');
+
+  allBtns.forEach(b => b.classList.add('disabled'));
+  allBtns[correct].classList.add('correct');
+
+  if (i === correct) {
+    scoreCorrect++;
+    showToast('✓ CORRECT !', 'correct-toast');
+  } else {
+    btn.classList.add('wrong');
+    scoreWrong++;
+    showToast('✗ FAUX !', 'wrong-toast');
+  }
+
+  document.getElementById('score-correct').textContent = scoreCorrect;
+  document.getElementById('score-wrong').textContent = scoreWrong;
+
+  // Show explanation
+  document.getElementById('q-explanation-text').textContent = q.exp;
+  document.getElementById('q-explanation').classList.add('visible');
+  document.getElementById('btn-next').classList.add('visible');
+}
+
+function nextQuestion() {
+  currentQ++;
+  renderQuestion();
+}
+
+function showToast(msg, cls) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${cls} show`;
+  setTimeout(() => { t.classList.remove('show'); }, 1800);
+}
+
+function showResults() {
+  document.getElementById('quiz-container').style.display = 'none';
+  const res = document.getElementById('results');
+  res.style.display = 'block';
+
+  const total = shuffled.length;
+  const pct = Math.round((scoreCorrect/total)*100);
+
+  document.getElementById('res-total').textContent = total;
+  document.getElementById('res-correct').textContent = scoreCorrect;
+  document.getElementById('res-wrong').textContent = scoreWrong;
+  document.getElementById('result-pct').textContent = pct + '%';
+
+  // Ring animation
+  const circumference = 2 * Math.PI * 66;
+  const offset = circumference * (1 - pct/100);
+  setTimeout(() => {
+    document.getElementById('ring-fill').style.strokeDashoffset = offset;
+  }, 300);
+
+  // Message
+  let msg, sub;
+  if (pct >= 85) { msg = "Excellent travail !"; sub = `${scoreCorrect}/${total} — Vous maîtrisez la pharmacologie des anti-infectieux.`; }
+  else if (pct >= 70) { msg = "Très bien !"; sub = `${scoreCorrect}/${total} — Solide, quelques révisions à faire.`; }
+  else if (pct >= 50) { msg = "Passable."; sub = `${scoreCorrect}/${total} — Des lacunes à combler avant l'examen.`; }
+  else { msg = "À retravailler."; sub = `${scoreCorrect}/${total} — Revenez aux cours fondamentaux.`; }
+
+  document.getElementById('result-message').textContent = msg;
+  document.getElementById('result-sub').textContent = sub;
+}
+
+function restartQuiz() {
+  document.getElementById('results').style.display = 'none';
+  shuffled = shuffle(questions);
+  currentQ = 0; scoreCorrect = 0; scoreWrong = 0;
+  document.getElementById('quiz-container').style.display = 'block';
+  renderQuestion();
+}
+</script>
+</body>
+</html>
